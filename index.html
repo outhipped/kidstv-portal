@@ -103,6 +103,12 @@
     <h2 id="picksHeader">⭐ Wybrane filmy</h2>
     <div class="card"><div class="list" id="picks"></div></div>
 
+    <h2 id="hiddenHeader">🚫 Ukryte na telewizorze</h2>
+    <div class="card">
+      <p class="muted" style="margin-top:0">Co noc AI sprawdza tytuł i opis każdego filmu i ukrywa te wyraźnie nieodpowiednie dla 10-latka. Widzi tylko tytuł i opis, nie sam film – jeśli coś przeoczy, wklej link powyżej i wybierz „Ukryj na TV”.</p>
+      <div class="list" id="hidden"></div>
+    </div>
+
     <h2>Tematy (sortuje je AI co noc)</h2>
     <div class="card">
       <div class="list" id="topics"></div>
@@ -268,7 +274,7 @@ async function load() {
       const t = JSON.parse(tf.truncated ? await (await fetch(tf.raw_url)).text() : tf.content);
       topicsInfo = { generatedAt: t.generatedAt, videos: Object.keys(t.videos || {}).length,
         counts: Object.fromEntries((t.topics || []).map(x => [x.id, x.videos.length])),
-        playlists: (t.playlists || []).map(p => p.title), state: t.state || {} };
+        playlists: (t.playlists || []).map(p => p.title), state: t.state || {}, hidden: t.hidden || {} };
     } catch { /* shown as "no data" */ }
   }
   await fetchMeta();
@@ -288,7 +294,30 @@ async function fetchMeta() {
 }
 
 // ---------- rendering ----------
-function renderAll() { renderStatus(); renderRows(); renderPicks(); renderTopics(); renderSettings(); changed(); }
+function renderAll() { renderStatus(); renderRows(); renderPicks(); renderHidden(); renderTopics(); renderSettings(); changed(); }
+
+const blockList = () => cfg.blockVideos || (cfg.blockVideos = []);
+const allowList = () => cfg.allowVideos || (cfg.allowVideos = []);
+
+/** AI-hidden videos (restorable) and videos you hid yourself (un-hideable). */
+function renderHidden() {
+  const ai = Object.entries(topicsInfo?.hidden || {}).filter(([id, h]) => h.why !== "ukryte przez rodzica" && !allowList().includes(id));
+  const mine = blockList();
+  $("#hiddenHeader").textContent = `🚫 Ukryte na telewizorze (${ai.length + mine.length})`;
+  const items = [];
+  for (const id of mine) {
+    const m = meta.videos[id], h = topicsInfo?.hidden?.[id];
+    items.push(el("div", { class: "item" }, pic(`https://i.ytimg.com/vi/${id}/mqdefault.jpg`, "thumb", "🚫"),
+      el("div", { class: "grow" }, el("div", { class: "title", text: m?.snippet?.title || h?.t || id }), el("div", { class: "muted", text: "Ukryte przez Ciebie" })),
+      el("button", { onclick: () => { cfg.blockVideos = blockList().filter(v => v !== id); renderHidden(); changed(); }, text: "Przywróć" })));
+  }
+  for (const [id, h] of ai) {
+    items.push(el("div", { class: "item" }, pic(`https://i.ytimg.com/vi/${id}/mqdefault.jpg`, "thumb", "🚫"),
+      el("div", { class: "grow" }, el("div", { class: "title", text: h.t || id }), el("div", { class: "muted", text: `${h.ct || ""} · AI: ${h.why || "nieodpowiednie"}` })),
+      el("button", { onclick: () => { if (confirm(`Przywrócić „${h.t}”? Dzieci będą mogły go obejrzeć.`)) { allowList().push(id); renderHidden(); changed(); } }, text: "Przywróć" })));
+  }
+  $("#hidden").replaceChildren(...(items.length ? items : [el("div", { class: "muted", text: topicsInfo ? "Nic nie jest ukryte." : "AI jeszcze nie sprawdzało filmów." })]));
+}
 
 function renderStatus() {
   const parts = [el("div", {}, "Konfiguracja zapisana: ", el("b", { text: fmtWhen(gistUpdatedAt) }))];
@@ -445,6 +474,13 @@ async function check() {
           el("div", { class: "title", style: "margin-top:8px", text: v.snippet.title }),
           el("div", { class: "muted", text: `${v.snippet.channelTitle} · ${fmtDur(secs(v.contentDetails.duration))}` }),
           problems.length ? el("div", { class: `note ${blocking ? "bad" : "warn"}`, text: problems.join(" · ") }) : null,
+          el("div", { class: "row", style: "margin-top:10px" }, blockList().includes(v.id)
+            ? el("div", { class: "note good", text: "✓ Ten film jest ukryty na TV." })
+            : el("button", { class: "danger", onclick: () => {
+                blockList().push(v.id);
+                const r = picksRow(false); if (r) r.videoIds = r.videoIds.filter(x => x !== v.id);
+                renderHidden(); renderPicks(); renderRows(); changed(); $("#preview").replaceChildren(); $("#linkIn").value = ""; toast("Film będzie ukryty – pamiętaj o „Zapisz”");
+              }, text: "🚫 Ukryj na TV" })),
           hasVideo(v.id) ? el("div", { class: "note good", text: "✓ Ten film już jest w „Wybranych”." }) :
             el("div", { class: "row", style: "margin-top:10px;flex-wrap:wrap" },
               el("button", { class: "primary", disabled: blocking, onclick: () => {
