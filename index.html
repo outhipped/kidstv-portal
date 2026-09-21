@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src https://i.ytimg.com https://yt3.ggpht.com https://yt3.googleusercontent.com data:; connect-src https://api.github.com https://www.googleapis.com https://gist.githubusercontent.com; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Kids TV – panel rodzica</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📺</text></svg>">
+<style>
+  :root {
+    --bg: #f4f1ea; --card: #ffffff; --ink: #1d232b; --muted: #66707c; --line: #e3ddd2;
+    --accent: #f2b705; --accent-ink: #1d232b; --danger: #c23b22; --ok: #2f7d4f; --warn: #b26a00;
+    --chip: #f0ece3; --shadow: 0 1px 2px rgba(29,35,43,.06), 0 4px 16px rgba(29,35,43,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101418; --card: #1a2027; --ink: #eef1f4; --muted: #9aa5b1; --line: #2a323b;
+      --accent: #ffd54f; --accent-ink: #101418; --danger: #ff7a66; --ok: #6fcf97; --warn: #ffb74d;
+      --chip: #232a32; --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 16px 16px 120px; }
+  header { display: flex; align-items: center; gap: 10px; margin: 8px 0 16px; }
+  header h1 { font-size: 22px; margin: 0; flex: 1; letter-spacing: -.01em; }
+  header .logo { font-size: 28px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 28px 4px 10px; font-weight: 600; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 14px; }
+  .card + .card { margin-top: 10px; }
+  .muted { color: var(--muted); font-size: 14px; }
+  .row { display: flex; gap: 10px; align-items: center; }
+  .grow { flex: 1; min-width: 0; }
+  input, textarea, select { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; }
+  input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  label { display: block; font-size: 14px; color: var(--muted); margin: 10px 0 4px; }
+  button { font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 11px 16px; min-height: 44px; cursor: pointer; background: var(--chip); color: var(--ink); }
+  button.primary { background: var(--accent); color: var(--accent-ink); }
+  button.danger { background: transparent; color: var(--danger); }
+  button.icon { padding: 6px; min-width: 38px; background: transparent; }
+  button:disabled { opacity: .45; cursor: default; }
+  .thumb { width: 72px; height: 40px; border-radius: 6px; object-fit: cover; background: var(--chip); flex: none; }
+  .avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--chip); flex: none; }
+  .big-thumb { width: 100%; aspect-ratio: 16/9; border-radius: 10px; object-fit: cover; background: var(--chip); }
+  .title { font-weight: 600; overflow-wrap: anywhere; }
+  .badge { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--chip); color: var(--muted); margin-right: 4px; }
+  .note { font-size: 14px; padding: 8px 10px; border-radius: 8px; margin-top: 8px; }
+  .note.warn { background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--warn); }
+  .note.bad { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
+  .note.good { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); }
+  .list > .item { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+  .list > .item > .note { flex-basis: 100%; margin-top: 0; }
+  .ph { display: grid; place-items: center; font-size: 22px; background: var(--chip); flex: none; }
+  .list > .item:first-child { border-top: 0; }
+  .item .editable { border: 0; background: transparent; padding: 2px 0; font-weight: 600; border-radius: 4px; }
+  .item .editable:focus { background: var(--bg); outline: 2px solid var(--accent); }
+  .actions { display: flex; gap: 2px; flex: none; }
+  .savebar { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-top: 1px solid var(--line); display: none; }
+  .savebar.show { display: block; }
+  .savebar .inner { max-width: 720px; margin: 0 auto; display: flex; gap: 10px; align-items: center; }
+  .toast { position: fixed; left: 50%; top: 16px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 15px; z-index: 10; max-width: calc(100% - 32px); display: none; }
+  details summary { cursor: pointer; font-weight: 600; min-height: 32px; }
+  .hidden { display: none !important; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--muted); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; vertical-align: -3px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  code { font-size: 13px; background: var(--chip); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<main>
+  <header><span class="logo" aria-hidden="true">📺</span><h1>Kids TV · panel rodzica</h1><button class="icon hidden" id="logoutBtn" title="Zapomnij klucze na tym urządzeniu">🔒</button></header>
+
+  <!-- First-time setup -->
+  <section id="setup" class="hidden">
+    <div class="card">
+      <div class="title">Pierwsze uruchomienie na tym urządzeniu</div>
+      <p class="muted">Wklej dwa klucze. Zostaną zapisane tylko w tej przeglądarce – strona nie wysyła ich nigdzie poza GitHubem i YouTube.</p>
+      <label for="tokenIn">Token GitHub (zaczyna się od <code>github_pat_</code>)</label>
+      <input id="tokenIn" type="password" autocomplete="off" spellcheck="false">
+      <label for="ytIn">Klucz YouTube API (zaczyna się od <code>AIza</code>)</label>
+      <input id="ytIn" type="password" autocomplete="off" spellcheck="false">
+      <div class="row" style="margin-top:14px"><button class="primary" id="setupBtn">Zapisz i otwórz</button><span id="setupMsg" class="muted"></span></div>
+      <p class="muted" style="margin-top:14px">Oba klucze są w pliku <code>secrets.properties</code> w folderze KIDTV na Macu.</p>
+    </div>
+  </section>
+
+  <section id="app" class="hidden">
+    <div class="card"><div id="status" class="muted"><span class="spinner"></span> Wczytuję…</div></div>
+
+    <h2>Dodaj z YouTube</h2>
+    <div class="card">
+      <label for="linkIn" style="margin-top:0">Wklej link do kanału, playlisty albo filmu</label>
+      <div class="row"><input id="linkIn" class="grow" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://youtube.com/@…  ·  youtu.be/…  ·  …list=…"><button id="checkBtn" class="primary">Sprawdź</button></div>
+      <div id="preview"></div>
+    </div>
+
+    <h2>Na telewizorze (kolejność wierszy)</h2>
+    <div class="card"><div class="list" id="rows"></div></div>
+
+    <h2 id="picksHeader">⭐ Wybrane filmy</h2>
+    <div class="card"><div class="list" id="picks"></div></div>
+
+    <h2>Tematy (sortuje je AI co noc)</h2>
+    <div class="card">
+      <div class="list" id="topics"></div>
+      <div class="row" style="margin-top:10px"><button id="addTopicBtn">＋ Nowy temat</button><button id="runCuratorBtn">🔄 Posortuj teraz</button></div>
+      <div id="curatorMsg"></div>
+    </div>
+
+    <h2>Ustawienia</h2>
+    <div class="card">
+      <label for="refreshIn" style="margin-top:0">Co ile godzin pytać YouTube o nowe filmy</label>
+      <input id="refreshIn" type="number" min="1" max="48" inputmode="numeric">
+      <label class="switch" for="stopIn" style="display:flex;gap:12px;align-items:flex-start;margin-top:16px;color:var(--ink)">
+        <input id="stopIn" type="checkbox" style="width:22px;height:22px;flex:none;margin-top:2px">
+        <span><b>Pomijaj ekran końcowy</b><br><span class="muted">Zatrzymuje film ok. 20 s przed końcem, zanim YouTube pokaże miniatury innych filmów tego kanału (i tak nie da się ich kliknąć). Wyłączone: film leci do samego końca.</span></span>
+      </label>
+      <p class="muted">Zmiany w tym panelu docierają do telewizora w ciągu ok. 15 minut.</p>
+    </div>
+  </section>
+</main>
+
+<div class="savebar" id="savebar"><div class="inner"><span class="grow muted" id="saveMsg">Masz niezapisane zmiany</span><button id="discardBtn">Cofnij</button><button class="primary" id="saveBtn">Zapisz</button></div></div>
+
+<script>
+"use strict";
+// Nothing about your account is written in this public page: the config Gist and the curator
+// repo are found with your token when the page opens.
+let GIST_ID = "", REPO = "";
+const CONFIG = "kidstv-config.json", TOPICS = "kidstv-topics.json";
+const WORKFLOW = "curator.yml", REPO_NAME = "kidstv";
+const PICKS_TITLE = "⭐ Wybrane filmy";
+const LS_TOKEN = "kidstv.githubToken", LS_YT = "kidstv.youtubeKey";
+
+let token = "", ytKey = "";
+let cfg = null, savedText = "", gistUpdatedAt = "", topicsInfo = null;
+const meta = { channels: {}, playlists: {}, videos: {} }; // details fetched from YouTube for display
+
+// ---------- small helpers (all text goes through textContent: YouTube titles can't inject HTML) ----------
+const $ = (s) => document.querySelector(s);
+function el(tag, props = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "class") e.className = v;
+    else if (k === "text") e.textContent = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (v !== undefined && v !== null && v !== false) e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const kid of kids.flat()) if (kid != null) e.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+  return e;
+}
+function toast(msg, ms = 2600) { const t = $("#toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = "none", ms); }
+/** An image, or an emoji placeholder when there's no picture (never a broken-image icon). */
+function pic(url, cls, emoji) {
+  if (!url || url === "data:,") return el("div", { class: `${cls} ph`, "aria-hidden": "true", text: emoji });
+  const img = el("img", { class: cls, alt: "", src: url });
+  img.addEventListener("error", () => img.replaceWith(el("div", { class: `${cls} ph`, "aria-hidden": "true", text: emoji })));
+  return img;
+}
+function fmtNum(n) { return Number(n || 0).toLocaleString("pl-PL"); }
+function fmtWhen(iso) {
+  if (!iso) return "nigdy";
+  const d = new Date(iso), mins = Math.round((Date.now() - d) / 60000);
+  const ago = mins < 1 ? "przed chwilą" : mins < 60 ? `${mins} min temu` : mins < 2880 ? `${Math.round(mins / 60)} godz. temu` : `${Math.round(mins / 1440)} dni temu`;
+  return d.toLocaleString("pl-PL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + ` (${ago})`;
+}
+function secs(iso) { const m = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(iso || ""); if (!m) return 0; const [d, h, mi, s] = m.slice(1).map(x => +x || 0); return d * 86400 + h * 3600 + mi * 60 + s; }
+function fmtDur(s) { const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(x).padStart(2, "0"); }
+
+// ---------- APIs ----------
+async function gh(path, opts = {}) {
+  const r = await fetch("https://api.github.com" + path, { ...opts, headers: { Authorization: "Bearer " + token, Accept: "application/vnd.github+json", ...(opts.headers || {}) } });
+  if (!r.ok) { const e = new Error(`GitHub ${r.status}`); e.status = r.status; e.body = await r.text().catch(() => ""); throw e; }
+  return r.status === 204 ? null : r.json();
+}
+async function yt(endpoint, params) {
+  const q = new URLSearchParams({ ...params, key: ytKey });
+  const r = await fetch(`https://www.googleapis.com/youtube/v3/${endpoint}?${q}`);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(j?.error?.message || `YouTube ${r.status}`); e.status = r.status; throw e; }
+  return j;
+}
+
+// ---------- link parsing ----------
+function parseLink(raw) {
+  const s = raw.trim();
+  const out = {};
+  if (/^[\w-]{11}$/.test(s)) return { video: s };
+  if (/^UC[\w-]{22}$/.test(s)) return { channel: { id: s } };
+  if (/^@[\w.\-]{3,}$/.test(s)) return { channel: { handle: s } };
+  if (/^(PL|UU|FL|OL|RD)[\w-]{10,}$/.test(s)) return { playlist: s };
+  let u; try { u = new URL(/^https?:\/\//i.test(s) ? s : "https://" + s); } catch { return out; }
+  if (!/(^|\.)youtube\.com$|(^|\.)youtu\.be$|(^|\.)youtube-nocookie\.com$/i.test(u.hostname)) return out;
+  const p = u.pathname.split("/").filter(Boolean);
+  if (/youtu\.be$/i.test(u.hostname) && p[0]) out.video = p[0];
+  if (u.searchParams.get("v")) out.video = u.searchParams.get("v");
+  if (["shorts", "embed", "live", "v"].includes(p[0]) && p[1]) out.video = p[1];
+  if (u.searchParams.get("list")) out.playlist = u.searchParams.get("list");
+  if (p[0] === "channel" && /^UC[\w-]{22}$/.test(p[1] || "")) out.channel = { id: p[1] };
+  else if (p[0] && p[0].startsWith("@")) out.channel = { handle: decodeURIComponent(p[0]) };
+  else if (p[0] === "c" && p[1]) out.channel = { custom: p[1] };
+  else if (p[0] === "user" && p[1]) out.channel = { user: p[1] };
+  if (out.video && !/^[\w-]{11}$/.test(out.video)) delete out.video;
+  if (out.playlist && /^(RD|LL|WL)/.test(out.playlist)) delete out.playlist; // mixes/likes/watch later: not real playlists
+  return out;
+}
+
+// ---------- config helpers ----------
+const rowsOf = () => cfg.rows || (cfg.rows = []);
+function picksRow(create) {
+  let r = rowsOf().find(r => r.type === "videos");
+  if (!r && create) { r = { type: "videos", title: PICKS_TITLE, videoIds: [] }; rowsOf().unshift(r); }
+  return r;
+}
+function hasChannel(id) { return rowsOf().some(r => r.type === "channel" && r.channelId === id); }
+function hasPlaylist(id) { return rowsOf().some(r => r.type === "playlist" && r.playlistId === id); }
+function hasVideo(id) { return (picksRow(false)?.videoIds || []).includes(id); }
+function rowValid(r) {
+  if (r.type === "channel") return /^UC[\w-]{22}$/.test(r.channelId || "");
+  if (r.type === "playlist") return /^[\w-]{13,}$/.test(r.playlistId || "");
+  return r.type === "videos";
+}
+function configText() {
+  const line = (o) => "    " + JSON.stringify(o);
+  const rows = rowsOf().map(line).join(",\n"), topics = (cfg.topics || []).map(line).join(",\n");
+  const rest = Object.fromEntries(Object.entries(cfg).filter(([k]) => !["version", "rows", "topics", "settings"].includes(k)));
+  let t = `{\n  "version": ${cfg.version || 1},\n  "rows": [\n${rows}\n  ],\n  "topics": [\n${topics}\n  ],\n  "settings": ${JSON.stringify(cfg.settings || {})}`;
+  for (const [k, v] of Object.entries(rest)) t += `,\n  ${JSON.stringify(k)}: ${JSON.stringify(v)}`;
+  return t + "\n}\n";
+}
+function changed() {
+  const dirty = configText() !== savedText;
+  $("#savebar").classList.toggle("show", dirty);
+  if (dirty) { $("#saveMsg").textContent = "Masz niezapisane zmiany"; $("#saveBtn").disabled = false; }
+}
+
+// ---------- loading ----------
+/** Finds your config Gist (the one containing kidstv-config.json) and your curator repo. */
+async function locate() {
+  if (GIST_ID) return;
+  for (let page = 1; page <= 5 && !GIST_ID; page++) {
+    const list = await gh(`/gists?per_page=100&page=${page}`);
+    const hit = list.find(g => g.files && g.files[CONFIG]);
+    if (hit) GIST_ID = hit.id;
+    if (list.length < 100) break;
+  }
+  if (!GIST_ID) throw new Error(`nie znaleziono Gista z plikiem ${CONFIG}`);
+  try { REPO = (await gh("/user")).login + "/" + REPO_NAME; } catch { /* only needed for "Posortuj teraz" */ }
+}
+
+async function load() {
+  $("#status").replaceChildren(el("span", { class: "spinner" }), " Wczytuję…");
+  await locate();
+  const g = await gh(`/gists/${GIST_ID}`);
+  gistUpdatedAt = g.updated_at;
+  const f = g.files[CONFIG];
+  const text = f.truncated ? await (await fetch(f.raw_url)).text() : f.content;
+  cfg = JSON.parse(text);
+  cfg.settings = cfg.settings || {};
+  savedText = configText();
+  topicsInfo = null;
+  const tf = g.files[TOPICS];
+  if (tf) {
+    try {
+      const t = JSON.parse(tf.truncated ? await (await fetch(tf.raw_url)).text() : tf.content);
+      topicsInfo = { generatedAt: t.generatedAt, videos: Object.keys(t.videos || {}).length,
+        counts: Object.fromEntries((t.topics || []).map(x => [x.id, x.videos.length])),
+        playlists: (t.playlists || []).map(p => p.title), state: t.state || {} };
+    } catch { /* shown as "no data" */ }
+  }
+  await fetchMeta();
+  renderAll();
+}
+
+/** Names/avatars/thumbnails for everything in the config, in as few YouTube calls as possible (1 unit each). */
+async function fetchMeta() {
+  const chans = rowsOf().filter(r => r.type === "channel" && rowValid(r) && !meta.channels[r.channelId]).map(r => r.channelId);
+  const pls = rowsOf().filter(r => r.type === "playlist" && rowValid(r) && !meta.playlists[r.playlistId]).map(r => r.playlistId);
+  const vids = (picksRow(false)?.videoIds || []).filter(v => !meta.videos[v]);
+  const jobs = [];
+  for (let i = 0; i < chans.length; i += 50) jobs.push(yt("channels", { part: "snippet,statistics", id: chans.slice(i, i + 50).join(","), maxResults: 50 }).then(j => (j.items || []).forEach(c => meta.channels[c.id] = c)));
+  for (let i = 0; i < pls.length; i += 50) jobs.push(yt("playlists", { part: "snippet,contentDetails", id: pls.slice(i, i + 50).join(","), maxResults: 50 }).then(j => (j.items || []).forEach(p => meta.playlists[p.id] = p)));
+  for (let i = 0; i < vids.length; i += 50) jobs.push(yt("videos", { part: "snippet,contentDetails,status", id: vids.slice(i, i + 50).join(","), maxResults: 50 }).then(j => (j.items || []).forEach(v => meta.videos[v.id] = v)));
+  await Promise.allSettled(jobs);
+}
+
+// ---------- rendering ----------
+function renderAll() { renderStatus(); renderRows(); renderPicks(); renderTopics(); renderSettings(); changed(); }
+
+function renderStatus() {
+  const parts = [el("div", {}, "Konfiguracja zapisana: ", el("b", { text: fmtWhen(gistUpdatedAt) }))];
+  if (topicsInfo) {
+    parts.push(el("div", {}, "Sortowanie AI: ", el("b", { text: fmtWhen(topicsInfo.generatedAt) }), ` · ${fmtNum(topicsInfo.videos)} filmów, ${topicsInfo.playlists.length} playlist`));
+    const st = topicsInfo.state;
+    if (st.stoppedEarly) parts.push(el("div", { class: "note warn", text: `Ostatnie sortowanie przerwane (${st.stoppedEarly}) – dokończy się przy następnym uruchomieniu.` }));
+    if (st.unclassified) parts.push(el("div", { class: "muted", text: `Czeka na posortowanie: ${fmtNum(st.unclassified)} filmów` }));
+  } else parts.push(el("div", { text: "Sortowanie AI: jeszcze nie było." }));
+  $("#status").replaceChildren(...parts);
+}
+
+function moveRow(i, d) { const rows = rowsOf(), j = i + d; if (j < 0 || j >= rows.length) return; [rows[i], rows[j]] = [rows[j], rows[i]]; renderRows(); changed(); }
+function removeRow(i) {
+  const r = rowsOf()[i];
+  if (!confirm(`Usunąć „${r.title}” z telewizora?`)) return;
+  rowsOf().splice(i, 1); renderRows(); renderPicks(); changed();
+}
+function titleInput(obj, key, onChange) {
+  return el("input", { class: "editable grow", value: obj[key] || "", "aria-label": "Nazwa", oninput: (e) => { obj[key] = e.target.value; (onChange || changed)(); } });
+}
+
+function renderRows() {
+  const list = $("#rows");
+  const rows = rowsOf();
+  if (!rows.length) { list.replaceChildren(el("div", { class: "muted", text: "Nic tu jeszcze nie ma – dodaj kanał powyżej." })); return; }
+  list.replaceChildren(...rows.map((r, i) => {
+    let img = null, sub = "", note = null;
+    if (!rowValid(r)) note = el("div", { class: "note bad", text: "Ten wiersz ma nieprawidłowe ID – telewizor go pomija. Usuń go albo dodaj ponownie z linku." });
+    if (r.type === "channel") {
+      const m = meta.channels[r.channelId];
+      img = pic(m?.snippet?.thumbnails?.default?.url, "avatar", "📺");
+      sub = m ? `Kanał · ${fmtNum(m.statistics?.videoCount)} filmów` : "Kanał";
+    } else if (r.type === "playlist") {
+      const m = meta.playlists[r.playlistId];
+      img = pic(m?.snippet?.thumbnails?.medium?.url, "thumb", "▶️");
+      sub = m ? `Playlista · ${fmtNum(m.contentDetails?.itemCount)} filmów` : "Playlista";
+    } else if (r.type === "videos") {
+      img = pic("", "avatar", "⭐");
+      sub = `Pojedyncze filmy · ${(r.videoIds || []).length}`;
+    }
+    if (!rowValid(r)) img = pic("", "avatar", "⚠️");
+    return el("div", { class: "item" }, img,
+      el("div", { class: "grow" }, titleInput(r, "title"), el("div", { class: "muted", text: sub })),
+      el("div", { class: "actions" },
+        el("button", { class: "icon", title: "W górę", "aria-label": "W górę", disabled: i === 0, onclick: () => moveRow(i, -1), text: "↑" }),
+        el("button", { class: "icon", title: "W dół", "aria-label": "W dół", disabled: i === rows.length - 1, onclick: () => moveRow(i, 1), text: "↓" }),
+        el("button", { class: "icon danger", title: "Usuń", "aria-label": "Usuń", onclick: () => removeRow(i), text: "🗑" })),
+      note);
+  }));
+}
+
+function renderPicks() {
+  const r = picksRow(false), ids = r?.videoIds || [];
+  $("#picksHeader").textContent = (r?.title || PICKS_TITLE) + ` (${ids.length})`;
+  if (!ids.length) { $("#picks").replaceChildren(el("div", { class: "muted", text: "Wklej link do filmu powyżej, żeby dodać go tutaj." })); return; }
+  $("#picks").replaceChildren(...ids.map((id) => {
+    const m = meta.videos[id];
+    const warn = m ? videoProblems(m) : [];
+    return el("div", { class: "item" },
+      pic(m?.snippet?.thumbnails?.medium?.url || `https://i.ytimg.com/vi/${id}/mqdefault.jpg`, "thumb", "▶️"),
+      el("div", { class: "grow" }, el("div", { class: "title", text: m?.snippet?.title || id }),
+        el("div", { class: "muted", text: m ? `${m.snippet.channelTitle} · ${fmtDur(secs(m.contentDetails.duration))}` : "Film niedostępny (usunięty lub prywatny?)" }),
+        ),
+      el("div", { class: "actions" }, el("button", { class: "icon danger", title: "Usuń", "aria-label": "Usuń film", onclick: () => {
+        r.videoIds = r.videoIds.filter(v => v !== id);
+        renderPicks(); renderRows(); changed();
+      }, text: "🗑" })),
+      warn.length ? el("div", { class: "note warn", text: warn.join(" · ") }) : null);
+  }));
+}
+
+function renderTopics() {
+  const topics = cfg.topics || (cfg.topics = []);
+  $("#topics").replaceChildren(...topics.map((t, i) => {
+    const n = topicsInfo?.counts?.[t.id];
+    return el("div", { class: "item", style: "align-items:flex-start" },
+      el("div", { class: "grow" },
+        el("div", { class: "row" }, titleInput(t, "title"), el("span", { class: "badge", text: n != null ? `${fmtNum(n)} filmów` : "nowy" })),
+        el("details", {}, el("summary", { class: "muted", text: "Czego szukać (wskazówka dla AI)" }),
+          el("textarea", { rows: 2, oninput: (e) => { t.hint = e.target.value; changed(); } }, t.hint || ""))),
+      el("div", { class: "actions" },
+        el("button", { class: "icon", "aria-label": "W górę", disabled: i === 0, onclick: () => { [topics[i - 1], topics[i]] = [topics[i], topics[i - 1]]; renderTopics(); changed(); }, text: "↑" }),
+        el("button", { class: "icon danger", "aria-label": "Usuń temat", onclick: () => { if (confirm(`Usunąć temat „${t.title}”?`)) { topics.splice(i, 1); renderTopics(); changed(); } }, text: "🗑" })));
+  }));
+}
+
+function renderSettings() {
+  $("#refreshIn").value = cfg.settings.refreshHours ?? 6;
+  $("#stopIn").checked = (cfg.settings.stopSecondsBeforeEnd ?? 20) > 0;
+}
+
+// ---------- adding from a link ----------
+function videoProblems(v) {
+  const p = [];
+  const s = secs(v.contentDetails?.duration);
+  if (!v.status?.embeddable) p.push("twórca blokuje odtwarzanie poza YouTube – nie zadziała na TV");
+  if (v.contentDetails?.contentRating?.ytRating === "ytAgeRestricted") p.push("ograniczenie wiekowe – nie zadziała na TV");
+  if ((v.snippet?.liveBroadcastContent || "none") !== "none") p.push("transmisja na żywo – TV ją pominie");
+  if (s > 0 && s <= 60) p.push("to Short (≤ 60 s) – TV go pominie");
+  const rr = v.contentDetails?.regionRestriction;
+  if (rr && ((rr.blocked || []).includes("PL") || (rr.allowed && !rr.allowed.includes("PL")))) p.push("niedostępny w Polsce");
+  return p;
+}
+
+async function resolveChannel(c) {
+  let j;
+  if (c.id) j = await yt("channels", { part: "snippet,statistics", id: c.id });
+  else if (c.handle) j = await yt("channels", { part: "snippet,statistics", forHandle: c.handle });
+  else if (c.user) j = await yt("channels", { part: "snippet,statistics", forUsername: c.user });
+  else if (c.custom) { // old-style /c/ name: no direct lookup; search (costs more quota, rare)
+    const s = await yt("search", { part: "snippet", type: "channel", q: c.custom, maxResults: 1 });
+    const id = s.items?.[0]?.id?.channelId;
+    if (id) j = await yt("channels", { part: "snippet,statistics", id });
+  }
+  return j?.items?.[0] || null;
+}
+
+function channelCard(ch) {
+  meta.channels[ch.id] = ch;
+  const already = hasChannel(ch.id);
+  const title = { value: ch.snippet.title };
+  return el("div", { class: "card", style: "margin-top:12px" },
+    el("div", { class: "row" }, pic(ch.snippet.thumbnails?.default?.url, "avatar", "📺"),
+      el("div", { class: "grow" }, el("div", { class: "title", text: ch.snippet.title }),
+        el("div", { class: "muted", text: `Kanał · ${fmtNum(ch.statistics?.subscriberCount)} subskrypcji · ${fmtNum(ch.statistics?.videoCount)} filmów` }))),
+    ch.snippet.description ? el("p", { class: "muted", text: ch.snippet.description.slice(0, 220) + (ch.snippet.description.length > 220 ? "…" : "") }) : null,
+    el("div", { class: "note warn", text: "Cały kanał = wszystkie jego długie filmy (także stare) trafią do dzieci i do tematów. Dodawaj tylko kanały, którym ufasz w całości." }),
+    already ? el("div", { class: "note good", text: "✓ Ten kanał już jest na telewizorze." }) :
+      el("div", {}, el("label", { text: "Nazwa wiersza na TV" }), el("input", { value: title.value, oninput: (e) => title.value = e.target.value }),
+        el("div", { class: "row", style: "margin-top:10px" }, el("button", { class: "primary", onclick: () => {
+          rowsOf().push({ type: "channel", title: title.value.trim() || ch.snippet.title, channelId: ch.id, maxVideos: 50 });
+          renderRows(); changed(); $("#preview").replaceChildren(); $("#linkIn").value = ""; toast("Dodano kanał – pamiętaj o „Zapisz”");
+        }, text: "📺 Dodaj cały kanał" }))));
+}
+
+async function check() {
+  const raw = $("#linkIn").value;
+  const box = $("#preview");
+  if (!raw.trim()) return;
+  const link = parseLink(raw);
+  if (!link.video && !link.playlist && !link.channel) { box.replaceChildren(el("div", { class: "note bad", text: "Nie rozpoznaję tego linku. Wklej adres z YouTube: kanału (…/@nazwa), playlisty (…list=…) albo filmu." })); return; }
+  box.replaceChildren(el("div", { class: "muted", style: "margin-top:12px" }, el("span", { class: "spinner" }), " Sprawdzam w YouTube…"));
+  const cards = [];
+  try {
+    if (link.video) {
+      const v = (await yt("videos", { part: "snippet,contentDetails,status", id: link.video })).items?.[0];
+      if (!v) cards.push(el("div", { class: "note bad", text: "Nie znaleziono filmu (usunięty albo prywatny)." }));
+      else {
+        meta.videos[v.id] = v;
+        const problems = videoProblems(v), blocking = problems.some(p => /nie zadziała|pominie|niedostępny/.test(p));
+        cards.push(el("div", { class: "card", style: "margin-top:12px" },
+          pic(v.snippet.thumbnails?.medium?.url, "big-thumb", "▶️"),
+          el("div", { class: "title", style: "margin-top:8px", text: v.snippet.title }),
+          el("div", { class: "muted", text: `${v.snippet.channelTitle} · ${fmtDur(secs(v.contentDetails.duration))}` }),
+          problems.length ? el("div", { class: `note ${blocking ? "bad" : "warn"}`, text: problems.join(" · ") }) : null,
+          hasVideo(v.id) ? el("div", { class: "note good", text: "✓ Ten film już jest w „Wybranych”." }) :
+            el("div", { class: "row", style: "margin-top:10px;flex-wrap:wrap" },
+              el("button", { class: "primary", disabled: blocking, onclick: () => {
+                const r = picksRow(true); r.videoIds = [v.id, ...(r.videoIds || []).filter(x => x !== v.id)];
+                renderPicks(); renderRows(); changed(); $("#preview").replaceChildren(); $("#linkIn").value = ""; toast("Dodano film – pamiętaj o „Zapisz”");
+              }, text: "⭐ Dodaj ten film" }))));
+        if (!link.channel) link.channel = { id: v.snippet.channelId, fromVideo: true };
+      }
+    }
+    if (link.playlist) {
+      const p = (await yt("playlists", { part: "snippet,contentDetails", id: link.playlist })).items?.[0];
+      if (!p) cards.push(el("div", { class: "note bad", text: "Nie znaleziono playlisty. Jeśli to Twoja, ustaw ją jako „Niepubliczna” (Unlisted) – prywatnych TV nie widzi." }));
+      else {
+        meta.playlists[p.id] = p;
+        const title = { value: p.snippet.title };
+        cards.push(el("div", { class: "card", style: "margin-top:12px" },
+          el("div", { class: "row" }, pic(p.snippet.thumbnails?.medium?.url, "thumb", "▶️"),
+            el("div", { class: "grow" }, el("div", { class: "title", text: p.snippet.title }), el("div", { class: "muted", text: `Playlista · ${fmtNum(p.contentDetails.itemCount)} filmów · ${p.snippet.channelTitle}` }))),
+          hasPlaylist(p.id) ? el("div", { class: "note good", text: "✓ Ta playlista już jest na telewizorze." }) :
+            el("div", {}, el("label", { text: "Nazwa wiersza na TV" }), el("input", { value: title.value, oninput: (e) => title.value = e.target.value }),
+              el("div", { class: "row", style: "margin-top:10px" }, el("button", { class: "primary", onclick: () => {
+                rowsOf().push({ type: "playlist", title: title.value.trim() || p.snippet.title, playlistId: p.id });
+                renderRows(); changed(); $("#preview").replaceChildren(); $("#linkIn").value = ""; toast("Dodano playlistę – pamiętaj o „Zapisz”");
+              }, text: "▶️ Dodaj playlistę" })))));
+      }
+    }
+    if (link.channel) {
+      const ch = await resolveChannel(link.channel);
+      if (ch) {
+        if (link.channel.fromVideo) cards.push(el("details", { style: "margin-top:12px" }, el("summary", { text: `…albo dodaj cały kanał „${ch.snippet.title}”` }), channelCard(ch)));
+        else cards.push(channelCard(ch));
+      } else if (!link.channel.fromVideo) cards.push(el("div", { class: "note bad", text: "Nie znaleziono kanału. Spróbuj wkleić link do dowolnego filmu z tego kanału." }));
+    }
+  } catch (e) {
+    cards.push(el("div", { class: "note bad", text: `Błąd YouTube: ${e.message}` }));
+  }
+  box.replaceChildren(...cards);
+}
+
+// ---------- saving ----------
+async function save() {
+  const btn = $("#saveBtn"); btn.disabled = true; $("#saveMsg").textContent = "Zapisuję…";
+  try {
+    const now = await gh(`/gists/${GIST_ID}`);
+    if (now.updated_at !== gistUpdatedAt) {
+      if (!confirm("Konfiguracja zmieniła się w międzyczasie (np. na innym urządzeniu). Nadpisać ją Twoją wersją?")) { btn.disabled = false; changed(); return; }
+    }
+    const text = configText(); JSON.parse(text);
+    const g = await gh(`/gists/${GIST_ID}`, { method: "PATCH", body: JSON.stringify({ files: { [CONFIG]: { content: text } } }) });
+    gistUpdatedAt = g.updated_at; savedText = text; changed(); renderStatus();
+    toast("Zapisano ✓ Telewizor pobierze zmiany w ciągu ok. 15 minut.", 4000);
+  } catch (e) {
+    $("#saveMsg").textContent = e.status === 403 || e.status === 404 ? "Brak uprawnień – sprawdź token GitHub (Gists: Read and write)." : `Nie udało się zapisać (${e.message}).`;
+    btn.disabled = false;
+  }
+}
+
+async function runCurator() {
+  const box = $("#curatorMsg");
+  try {
+    await gh(`/repos/${REPO}/actions/workflows/${WORKFLOW}/dispatches`, { method: "POST", body: JSON.stringify({ ref: "main" }) });
+    box.replaceChildren(el("div", { class: "note good", text: "Uruchomiono sortowanie. Potrwa kilka–kilkanaście minut; potem telewizor pobierze nowe tematy." }));
+  } catch (e) {
+    box.replaceChildren(el("div", { class: "note warn", text: e.status === 403 || e.status === 404
+      ? "Ten token nie może uruchamiać sortowania. Sortowanie i tak działa co noc. Żeby mieć ten przycisk: w ustawieniach tokenu na GitHubie dodaj repozytorium „kidstv” z uprawnieniem Actions: Read and write."
+      : `Nie udało się uruchomić (${e.message}).` }));
+  }
+}
+
+// ---------- setup & wiring ----------
+async function setup() {
+  const t = $("#tokenIn").value.trim(), k = $("#ytIn").value.trim();
+  const msg = $("#setupMsg");
+  if (!t || !k) { msg.textContent = "Wklej oba klucze."; return; }
+  msg.replaceChildren(el("span", { class: "spinner" }), " Sprawdzam…");
+  token = t; ytKey = k;
+  try { await locate(); } catch (e) { msg.textContent = `Token GitHub nie działa (${e.status || e.message}).`; return; }
+  try { await yt("videos", { part: "id", id: "jNQXAC9IVRw" }); } catch (e) { msg.textContent = `Klucz YouTube nie działa (${e.message}).`; return; }
+  try { localStorage.setItem(LS_TOKEN, t); localStorage.setItem(LS_YT, k); } catch { /* private mode: works for this visit only */ }
+  start();
+}
+
+function start() {
+  $("#setup").classList.add("hidden"); $("#app").classList.remove("hidden"); $("#logoutBtn").classList.remove("hidden");
+  load().catch(e => $("#status").replaceChildren(el("div", { class: "note bad", text: `Nie udało się wczytać konfiguracji (${e.message}). Sprawdź internet i token.` })));
+}
+
+$("#setupBtn").addEventListener("click", setup);
+$("#checkBtn").addEventListener("click", check);
+$("#linkIn").addEventListener("keydown", (e) => { if (e.key === "Enter") check(); });
+$("#linkIn").addEventListener("paste", () => setTimeout(check, 0));
+$("#saveBtn").addEventListener("click", save);
+$("#discardBtn").addEventListener("click", () => { if (confirm("Cofnąć wszystkie niezapisane zmiany?")) { cfg = JSON.parse(savedText); renderAll(); } });
+$("#addTopicBtn").addEventListener("click", () => {
+  const name = prompt("Nazwa nowego tematu (z emoji na początku, np. „🦖 Dinozaury”):"); if (!name) return;
+  const id = name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/ł/g, "l").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "temat-" + Date.now();
+  const hint = prompt("Czego AI ma szukać? (po angielsku działa najlepiej, np. „dinosaurs, fossils, prehistoric animals”)") || "";
+  (cfg.topics || (cfg.topics = [])).push({ id, title: name.trim(), hint }); renderTopics(); changed();
+});
+$("#runCuratorBtn").addEventListener("click", runCurator);
+$("#refreshIn").addEventListener("input", (e) => { const v = parseInt(e.target.value, 10); if (v >= 1 && v <= 48) { cfg.settings.refreshHours = v; changed(); } });
+$("#stopIn").addEventListener("change", (e) => { cfg.settings.stopSecondsBeforeEnd = e.target.checked ? 20 : 0; changed(); });
+$("#logoutBtn").addEventListener("click", () => { if (confirm("Zapomnieć klucze na tym urządzeniu?")) { try { localStorage.removeItem(LS_TOKEN); localStorage.removeItem(LS_YT); } catch {} location.reload(); } });
+window.addEventListener("beforeunload", (e) => { if (cfg && configText() !== savedText) { e.preventDefault(); e.returnValue = ""; } });
+
+try { token = localStorage.getItem(LS_TOKEN) || ""; ytKey = localStorage.getItem(LS_YT) || ""; } catch { /* storage blocked */ }
+if (token && ytKey) start(); else $("#setup").classList.remove("hidden");
+</script>
+</body>
+</html>
