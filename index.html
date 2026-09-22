@@ -324,8 +324,13 @@ function renderStatus() {
   if (topicsInfo) {
     parts.push(el("div", {}, "Sortowanie AI: ", el("b", { text: fmtWhen(topicsInfo.generatedAt) }), ` · ${fmtNum(topicsInfo.videos)} filmów, ${topicsInfo.playlists.length} playlist`));
     const st = topicsInfo.state;
-    if (st.stoppedEarly) parts.push(el("div", { class: "note warn", text: `Ostatnie sortowanie przerwane (${st.stoppedEarly}) – dokończy się przy następnym uruchomieniu.` }));
-    if (st.unclassified) parts.push(el("div", { class: "muted", text: `Czeka na posortowanie: ${fmtNum(st.unclassified)} filmów` }));
+    const planned = /MAX_GEMINI_CALLS|limit/i.test(st.stoppedEarly || "");
+    if (st.unclassified && st.catalogue) {
+      // The nightly run checks a batch at a time (free Gemini limit): show it as progress, not a problem.
+      const done = st.catalogue - st.unclassified;
+      parts.push(el("div", { class: "note good", text: `Sprawdzanie filmów w toku: ${fmtNum(done)} z ${fmtNum(st.catalogue)} sprawdzonych – kolejne partie co noc. Kanały pojawiają się na TV, gdy AI je sprawdzi.` }));
+    }
+    if (st.stoppedEarly && !planned) parts.push(el("div", { class: "note warn", text: `Ostatnie sortowanie zatrzymał błąd (${st.stoppedEarly}) – spróbuje znowu następnej nocy.` }));
   } else parts.push(el("div", { text: "Sortowanie AI: jeszcze nie było." }));
   $("#status").replaceChildren(...parts);
 }
